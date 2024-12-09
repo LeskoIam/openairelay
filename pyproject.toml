@@ -14,8 +14,10 @@ license = {file = "LICENSE"}
 
 requires-python = ">=3.13"
 dependencies = [
+    "openai>=1.57.0",
     "fastapi>=0.115.5",
     "python-dotenv>=1.0.1",
+    "PyYAML>=6.0.2",
 ]
 
 classifiers = [
@@ -25,8 +27,8 @@ classifiers = [
 ]
 
 #[project.urls]
-#Homepage = "https://github.com/LeskoIam/kronoterm_cloud_relay"
-#Issues = "https://github.com/LeskoIam/kronoterm_cloud_relay/issues"
+Homepage = "https://github.com/LeskoIam/openairelay"
+Issues = "https://github.com/LeskoIam/openairelay/issues"
 
 
 [tool.bumpver]
@@ -46,6 +48,7 @@ push = true
     'current_version = "{version}"',
     'version = "{version}"'
 ]
+# Here for exampliary means
 #"src/kronoterm_cloud_relay.py" = [
 #    '__version__ = "{version}"',
 #]
@@ -65,7 +68,6 @@ indent-width = 4
 extend-exclude = ["setup.py"]
 
 [tool.ruff.lint]
-# select = ["ALL"]
 select = [
     # pycodestyle errors
     "E",

@@ -1,6 +1,6 @@
-openai~=1.57.0
+openai>=1.57.0
+fastapi[standard]>=0.115.6
+python-dotenv>=1.0.1
+PyYAML>=6.0.2
 
-fastapi[standard]~=0.115.6
-python-dotenv~=1.0.1
 ruff
-PyYAML~=6.0.2
