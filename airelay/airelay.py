@@ -54,8 +54,8 @@ class Roles(str, Enum):
 
 
 @app.post("/api/v1/roles/predefined/{role}/{prompt}")
-def system_role_spock(role: Roles, prompt: str):
-    """Get response from openAI chatbot.
+def respond_as_role(role: Roles, prompt: str):
+    """Get response from openAI chatbot as a predefined role.
 
     :param role:
     :param prompt:

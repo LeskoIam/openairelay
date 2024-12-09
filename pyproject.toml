@@ -9,7 +9,6 @@ readme = "README.md"
 description = "Relay between openAI API and local network API"
 authors = [{name = "Matevž", email = "matevzlesko@gmail.com"},]
 
-
 license = {file = "LICENSE"}
 
 requires-python = ">=3.13"
@@ -26,10 +25,14 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-#[project.urls]
+[project.urls]
 Homepage = "https://github.com/LeskoIam/openairelay"
 Issues = "https://github.com/LeskoIam/openairelay/issues"
 
+[tool.pytest.ini_options]
+pythonpath = [
+    "airelay",
+]
 
 [tool.bumpver]
 current_version = "0.0.0"

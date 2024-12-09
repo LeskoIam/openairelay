@@ -5,6 +5,10 @@
 import os
 from typing import Any
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def get_env(var: str, default: Any = None) -> str | Any:
     """Return environment variable var value if it exists otherwise return default.
@@ -17,5 +21,5 @@ def get_env(var: str, default: Any = None) -> str | Any:
     return sr if isinstance(sr, str) else default
 
 
-SYSTEM_ROLES = get_env("SYSTEM_ROLES", "./config/system_roles.yaml")
+SYSTEM_ROLES = get_env("SYSTEM_ROLES", "./airelay/settings/system_roles_example.yaml")
 LOGGING_CONFIG = get_env("LOGGING_CONFIG", "./logging.yaml")
