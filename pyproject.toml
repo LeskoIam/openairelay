@@ -9,6 +9,15 @@ readme = "README.md"
 description = "Relay between openAI API and local network API"
 authors = [{name = "Matevž", email = "matevzlesko@gmail.com"},]
 
+[tool.pytest.ini_options]
+pythonpath = [
+    "airelay",
+]
+
+markers = [
+    "uses_tokens: marks tests that cost money",
+]
+
 license = {file = "LICENSE"}
 
 requires-python = ">=3.13"
@@ -29,13 +38,6 @@ classifiers = [
 Homepage = "https://github.com/LeskoIam/openairelay"
 Issues = "https://github.com/LeskoIam/openairelay/issues"
 
-[tool.pytest.ini_options]
-pythonpath = [
-    "airelay",
-]
-markers = [
-    "uses_tokens: marks tests that cost money",
-]
 
 [tool.bumpver]
 current_version = "0.0.0"

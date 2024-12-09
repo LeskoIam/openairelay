@@ -41,7 +41,7 @@ def load_system_role(role: str):
         if _all:
             return system_roles
         if role not in system_roles:
-            log.info("System role % not found in %s", role, system_roles)
+            log.info("System role %s not found in %s", role, system_roles)
             raise LoadSystemRoleException(f"System role {role} not found in {system_roles}")
         log.info("Loaded system role %s: %s", role, system_roles[role])
         return system_roles[role]
