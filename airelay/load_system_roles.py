@@ -19,22 +19,22 @@ class LoadSystemRoleException(Exception):
 class LoadAssistantInstructionsException(Exception):
     pass
 
-
-class ci_dict(dict):  # noqa: N801
-    def __init__(self, _dict: dict):
-        """Case-insensitive dictionary
-
-        :param _dict: input dict
-        """
-        super().__init__()
-        for k, v in _dict.items():
-            self.__setitem__(k, v)
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key.lower(), value)
-
-    def __getitem__(self, key):
-        return super().__getitem__(key.lower())
+#
+# class ci_dict(dict):  # noqa: N801
+#     def __init__(self, _dict: dict):
+#         """Case-insensitive dictionary
+#
+#         :param _dict: input dict
+#         """
+#         super().__init__()
+#         for k, v in _dict.items():
+#             self.__setitem__(k, v)
+#
+#     def __setitem__(self, key, value):
+#         super().__setitem__(key.lower(), value)
+#
+#     def __getitem__(self, key):
+#         return super().__getitem__(key.lower())
 
 
 def load_system_role(role: str):
@@ -48,7 +48,7 @@ def load_system_role(role: str):
     log.debug("getting role: '%s'", role)
     if os.path.exists(SYSTEM_ROLES):
         with open(SYSTEM_ROLES, "rt") as f:
-            system_roles = ci_dict(yaml.safe_load(f.read()))
+            system_roles = yaml.safe_load(f.read())
         _system_roles = {}
         for _role, data in system_roles.items():
             if not _role.startswith(".") or _all:
@@ -73,7 +73,7 @@ def load_assistant_instructions(instruction_name: str):
     _all = instruction_name == "__ALL__"
     if os.path.exists(ASSISTANT_INSTRUCTIONS):
         with open(ASSISTANT_INSTRUCTIONS, "rt") as f:
-            assistant_instructions = ci_dict(yaml.safe_load(f.read()))
+            assistant_instructions = yaml.safe_load(f.read())
         _assistant_instructions = {}
         for _instruction_name, _instruction_description in assistant_instructions.items():
             if not _instruction_name.startswith(".") or _all:

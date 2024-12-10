@@ -8,13 +8,26 @@ It's a relay between openAI API and local network API. Useful for things like [H
 No fields are mandatory except for `OPENAI_API_KEY`
 
 ```.dotenv
-OPENAI_API_KEY="your-open-api-key"
+# Defaults to `./config/logging.yaml`
+LOGGING_CONFIG=./config/logging.yaml
 
-# Defaults to ./airelay/settings/system_roles.yaml
-SYSTEM_ROLES=./airelay/settings/system_roles.yaml
-# Defaults to ./logging.yaml
-LOGGING_CONFIG=./logging.yaml
+OPENAI_API_KEY="your-open-api-key"
+OPENAI_ASSISTANT_ID="your-open-ai-assistant-id"
+
+# Defaults to `./config/system_roles.yaml`
+SYSTEM_ROLES=./config/system_roles.yaml
+# Defaults to `./config/assistant_instructions.yaml`
+ASSISTANT_INSTRUCTIONS=./config/assistant_instructions.yaml
 ```
+
+## Roles and Assistant settings
+You can use your own locations and files for settings as you define them with environment variables.
+
+### Roles
+Take a look at: `config/system_roles.yaml`
+
+### Assistant instructions
+Take a look at: `config/assistant_instructions.yaml`
 
 ## Run
 ```shell
@@ -28,16 +41,24 @@ Accessible at: http://localhost:8088/docs
 # configuration.yaml
 rest_command:
     ai_get_reply:
-    # Here you can select which system role to use in the bellow case 'default' role is selected (e.g.: '.../default/...')
-    url: http://my-ip-or-host:8088/api/v1/roles/predefined/default/{{ prompt }}
-    # Or define a select or text input for selecting predefined system roles:
-    # url: http://my-ip-or-host:8088/api/v1/roles/predefined/{{ 'default' if states('input_text.ai_default_system_role') | length == 0 else states('input_text.ai_default_system_role')}}/{{ prompt }}
-    verify_ssl: false
-    method: POST
+      # Here you can select which system role to use in the bellow case 'default' role is selected (e.g.: '.../default/...')
+      url: http://my-ip-or-host:8088/api/v1/roles/default/{{ prompt }}
+      # Or define a input_select helper for selecting predefined system roles:
+      # url: http://my-ip-or-host:8088/api/v1/roles/{{ states('input_select.ai_system_role' )}}/{{ prompt }}
+      verify_ssl: false
+      method: POST
+    
+    ai_get_assistant_reply:
+      url: http://192.168.0.201:8088/api/v1/assistants/default/{{ prompt }}
+      timeout: 30
+      verify_ssl: false
+      method: POST
 
 # automations.yaml
 actions:
 - action: rest_command.ai_get_reply
+# or
+# - action: rest_command.ai_get_assistant_reply
   data:
     # This is the {{ prompt }} variable from above
     prompt: >-
@@ -53,4 +74,5 @@ actions:
         data:
           ttl: 0
           priority: high
+
 ```
