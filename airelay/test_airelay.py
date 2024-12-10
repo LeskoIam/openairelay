@@ -57,6 +57,13 @@ def test_show_roles_assistants(client: TestClient, functionality: str):
         assert len(test_response.json()["msg"]["description"]) > 10
 
 
+def test_non_existent_role_fails_gracefully(client: TestClient):
+    """If role does not exist it should fail gracefully and cause server error."""
+    role = "non_existent_role"
+    response = client.get(f"/api/v1/roles/{role}")
+    assert response.status_code == 200
+
+
 @pytest.mark.uses_tokens
 @pytest.mark.parametrize("role", ["Spock", "BugsBunny", "default"])
 def test_roles(client: TestClient, role: str):

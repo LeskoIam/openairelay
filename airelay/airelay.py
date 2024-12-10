@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from openai import OpenAI
 
-from .config import OPENAI_ASSISTANT_ID
+from .config import OPENAI_ASSISTANT_ID, OPENAI_ASSISTANT_THREAD_ID
 from .load_system_roles import load_assistant_instructions, load_system_role
 from .logging_config import configure_logging
 
@@ -59,17 +59,24 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
         raise HTTPException(status_code=503, detail="OPENAI_ASSISTANT_ID is not defined in environment")
     log.info("OPENAI_ASSISTANT_ID: %s", OPENAI_ASSISTANT_ID)
     assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
-    thread = client.beta.threads.create()
+    if OPENAI_ASSISTANT_THREAD_ID is None:
+        log.info("No OPENAI_ASSISTANT_THREAD_ID defined, Creating new thread.")
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+    else:
+        log.info("Using thread id from OPENAI_ASSISTANT_THREAD_ID.")
+        thread_id = OPENAI_ASSISTANT_THREAD_ID
+    log.info(thread_id)
 
-    client.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
+    client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
     run = client.beta.threads.runs.create_and_poll(
-        thread_id=thread.id,
+        thread_id=thread_id,
         assistant_id=assistant.id,
         instructions=instructions,
     )
 
     if run.status == "completed":
-        messages = client.beta.threads.messages.list(thread_id=thread.id)
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
         response = []
         for message in messages.data:
             if message.role == "assistant":
