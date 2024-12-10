@@ -78,9 +78,14 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
         return "No assistant data returned"
 
 
-@app.get("/api/v1/roles/predefined/")
+#                           #######
+# ########################### API #############################
+#                           #######
+
+
+@app.get("/api/v1/roles/")
 def list_roles():
-    """List all predefined roles.
+    """List all roles.
 
     :return:
     """
@@ -88,9 +93,9 @@ def list_roles():
     return {"msg": system_roles}
 
 
-@app.get("/api/v1/roles/predefined/{role}")
+@app.get("/api/v1/roles/{role}")
 def show_role(role: str):
-    """Show predefined role.
+    """Show role.
 
     :param role:
     :return:
@@ -99,9 +104,9 @@ def show_role(role: str):
     return {"msg": system_role}
 
 
-@app.post("/api/v1/roles/predefined/{role}/{prompt}")
+@app.post("/api/v1/roles/{role}/{prompt}")
 def respond_as_role(role: str, prompt: str):
-    """Get response from openAI chatbot as a predefined role.
+    """Get response from openAI chatbot as a role.
 
     :param role:
     :param prompt:
@@ -114,7 +119,7 @@ def respond_as_role(role: str, prompt: str):
     return {"msg": response, "system": {"role": role}}
 
 
-@app.get("/api/v1/assistant/predefined/")
+@app.get("/api/v1/assistants/")
 def list_assistant_instructions():
     """List all defined assistant instructions.
 
@@ -124,7 +129,7 @@ def list_assistant_instructions():
     return {"msg": system_roles}
 
 
-@app.get("/api/v1/assistant/predefined/{instructions}")
+@app.get("/api/v1/assistants/{instructions}")
 def show_assistant_instructions(instructions: str):
     """Show single assistant instruction.
 
@@ -135,9 +140,9 @@ def show_assistant_instructions(instructions: str):
     return {"msg": assistant_instructions}
 
 
-@app.post("/api/v1/assistant/predefined/{instructions}/{prompt}")
+@app.post("/api/v1/assistants/{instructions}/{prompt}")
 def respond_as_assistant(instructions: str, prompt: str):
-    """Get response from openAI chatbot as a predefined assistant.
+    """Get response from openAI chatbot as assistant.
 
     :param instructions:
     :param prompt:
