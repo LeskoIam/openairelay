@@ -68,4 +68,4 @@ def respond_as_role(role: Roles, prompt: str):
     return {"msg": response, "system": {"role": role}}
 
 
-# fastapi run src/airelay.py --host=0.0.0.0 --port=8088 --reload
+# fastapi run airelay/airelay.py --host=0.0.0.0 --port=8088 --reload

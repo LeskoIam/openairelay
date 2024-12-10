@@ -1,7 +1,7 @@
 services:
   kronoterm_cloud_relay:
-    image: leskoiam/kronoterm_cloud_relay:latest
-    container_name: kronoterm_cloud_relay
+    image: leskoiam/airelay:latest
+    container_name: airelay
     restart: unless-stopped
     ports:
       - "8088:8088"  # Adjust the port mappings as needed
