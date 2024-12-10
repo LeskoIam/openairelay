@@ -36,6 +36,14 @@ def test_list_roles_assistants(client: TestClient, functionality: str):
         assert len(desc["description"]) > 10
 
 
+def test_get_thread_by_name(client: TestClient):
+    """Check if we can retrieve saved thread by its name."""
+    # name = "non_existing_thread"
+    name = "default"
+    response = client.get(f"/api/v1/threads/{name}")
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize("functionality", ["roles", "assistants"])
 def test_show_roles_assistants(client: TestClient, functionality: str):
     """Test if roles and assistants API endpoints contain details ["description"] key.

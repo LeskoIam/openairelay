@@ -3,12 +3,14 @@
 # When it's bad, it's better than nothing.
 # When it lies to you, it may be a while before you realize something's wrong.
 import logging
+from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from openai import OpenAI
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from .config import OPENAI_ASSISTANT_ID, OPENAI_ASSISTANT_THREAD_ID
+from .config import OPENAI_ASSISTANT_ID
 from .load_system_roles import load_assistant_instructions, load_system_role
 from .logging_config import configure_logging
 
@@ -48,24 +50,24 @@ def get_ai_response(prompt: str, system_role: str | None = None):
     return completion.choices[0].message.content
 
 
-def get_ai_assistant_response(prompt: str, instructions: str | None = None):
+def get_ai_assistant_response(
+    prompt: str, instructions: str | None = None, thread_id: str | None = None
+) -> tuple[str, str]:
     """Return AI assistant response based on prompt and instructions.
 
     :param prompt:
     :param instructions:
+    :param thread_id:
     :return:
     """
     if OPENAI_ASSISTANT_ID is None:
         raise HTTPException(status_code=503, detail="OPENAI_ASSISTANT_ID is not defined in environment")
     log.info("OPENAI_ASSISTANT_ID: %s", OPENAI_ASSISTANT_ID)
     assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
-    if OPENAI_ASSISTANT_THREAD_ID is None:
-        log.info("No OPENAI_ASSISTANT_THREAD_ID defined, Creating new thread.")
+    if thread_id is None:
+        log.info("No thread_id defined, Creating new thread.")
         thread = client.beta.threads.create()
         thread_id = thread.id
-    else:
-        log.info("Using thread id from OPENAI_ASSISTANT_THREAD_ID.")
-        thread_id = OPENAI_ASSISTANT_THREAD_ID
     log.info(thread_id)
 
     client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
@@ -83,16 +85,105 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
                 for content in message.content:
                     if content.type == "text":
                         response.append(content.text.value)
-        return response[0]
+        return response[0], thread_id
     else:
         raise HTTPException(status_code=504, detail="Run did not complete")
 
+
+# DB models
+class SavedThreadBase(SQLModel):
+    name: str = Field(index=True, unique=True)
+    description: str | None = Field(default=None)
+
+
+class SavedThread(SavedThreadBase, table=True):
+    thread_id: str = Field(primary_key=True)
+
+
+# class SavedThreadPublic(SavedThreadBase):
+#     name: str
+#     description: str
+
+
+# class SavedThreadCreate(SavedThreadBase):
+#     name: str
+#     description: str
+
+
+# DB config
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+
+def create_db_and_tables():
+    """Create all DB."""
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session():
+    """Create session context"""
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 #                           #######
 # ########################### API #############################
 #                           #######
 
 
+@app.on_event("startup")
+def on_startup():
+    """Create DB on startup."""
+    create_db_and_tables()
+
+
+# Assistant threads
+@app.get("/api/v1/threads", response_model=list[SavedThreadBase])
+def list_saved_threads(session: SessionDep):
+    """List all saved threads.
+
+    :param session:
+    :return:
+    """
+    saved_sessions = session.exec(select(SavedThread)).all()
+    return saved_sessions
+
+
+@app.get("/api/v1/threads/{name}", response_model=SavedThreadBase)
+def get_thread_by_name(session: SessionDep, name):
+    """Return saved thread by its name.
+
+    :param session:
+    :param name:
+    :return:
+    """
+    ses = session.exec(select(SavedThread).filter(SavedThread.name == name)).first()
+    return ses
+
+
+@app.post("/api/v1/threads/", response_model=SavedThreadBase)
+def new_thread(thread: SavedThreadBase, session: SessionDep):
+    """Create new thread.
+
+    :param thread:
+    :param session:
+    :return:
+    """
+    _thread = client.beta.threads.create()
+    log.info("Created new thread with id %s", _thread.id)
+    db_thread = SavedThread(name=thread.name, description=thread.description, thread_id=_thread.id)
+    session.add(db_thread)
+    session.commit()
+    session.refresh(db_thread)
+    return db_thread
+
+
+# Roles
 @app.get("/api/v1/roles/")
 def list_roles():
     """List all roles.
@@ -129,6 +220,7 @@ def respond_as_role(role: str, prompt: str):
     return {"msg": response, "system": {"role": role}}
 
 
+# Assistant
 @app.get("/api/v1/assistants/")
 def list_assistant_instructions():
     """List all defined assistant instructions.
@@ -151,7 +243,7 @@ def show_assistant_instructions(instructions: str):
 
 
 @app.post("/api/v1/assistants/{instructions}/{prompt}")
-def respond_as_assistant(instructions: str, prompt: str):
+def respond_as_assistant(instructions: str, prompt: str, session: SessionDep):
     """Get response from openAI chatbot as assistant.
 
     :param instructions:
@@ -160,9 +252,16 @@ def respond_as_assistant(instructions: str, prompt: str):
     """
     instructions = load_assistant_instructions(instructions)["description"]
     log.info("Assistant instructions: %s", instructions)
-    response = get_ai_assistant_response(prompt=prompt, instructions=instructions)
-
-    return {"msg": response, "system": {"instructions": instructions}}
+    thread_name = "default"
+    if thread_name is not None:
+        thread = session.exec(select(SavedThread).filter(SavedThread.name == thread_name)).first()
+        thread_id = thread.thread_id
+        log.info("Existing thread %s will be used", thread)
+    else:
+        log.info("No thread id for %s, new thread will be created", thread_name)
+        thread_id = None
+    response, thread_id = get_ai_assistant_response(prompt=prompt, instructions=instructions, thread_id=thread_id)
+    return {"msg": response, "system": {"instructions": instructions, "thread_id": thread_id}}
 
 
 # fastapi run airelay/airelay.py --host=0.0.0.0 --port=8088 --reload
