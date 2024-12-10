@@ -11,7 +11,7 @@ from openai import OpenAI
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from .config import OPENAI_ASSISTANT_ID
-from .load_system_roles import load_assistant_instructions, load_system_role, LoadSystemRoleException
+from .load_system_roles import LoadSystemRoleException, load_assistant_instructions, load_system_role
 from .logging_config import configure_logging
 
 # Get a logger object
@@ -74,8 +74,9 @@ def get_ai_assistant_response(
     run = client.beta.threads.runs.create_and_poll(
         thread_id=thread_id,
         assistant_id=assistant.id,
-        instructions=instructions,
+        # instructions=instructions,  # TODO: Do I change the original instructions here?
     )
+    log.info(run.instructions)
 
     if run.status == "completed":
         messages = client.beta.threads.messages.list(thread_id=thread_id)
@@ -193,7 +194,7 @@ def show_role(role: str):
         system_role = load_system_role(role)
     except LoadSystemRoleException as exc:
         log.info("Role %s not found", role)
-        raise HTTPException(status_code=404, detail=f"Role {role} not found. {exc}")
+        raise HTTPException(status_code=404, detail=f"Role {role} not found") from exc
     return {"msg": system_role}
 
 
@@ -244,7 +245,7 @@ def respond_as_assistant(instructions: str, prompt: str, session: SessionDep):
     """
     instructions = load_assistant_instructions(instructions)["description"]
     log.info("Assistant instructions: %s", instructions)
-    thread_name = "default"  # TODO: Implement dynamic thread bane (id) selection
+    thread_name = "default"  # TODO: Implement dynamic thread name (id) selection
     if thread_name is not None:
         thread = session.exec(select(SavedThread).filter(SavedThread.name == thread_name)).first()
         thread_id = thread.thread_id
