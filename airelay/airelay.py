@@ -11,7 +11,7 @@ from openai import OpenAI
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from .config import OPENAI_ASSISTANT_ID
-from .load_system_roles import load_assistant_instructions, load_system_role
+from .load_system_roles import load_assistant_instructions, load_system_role, LoadSystemRoleException
 from .logging_config import configure_logging
 
 # Get a logger object
@@ -91,23 +91,10 @@ def get_ai_assistant_response(
 
 
 # DB models
-class SavedThreadBase(SQLModel):
+class SavedThread(SQLModel, table=True):
+    thread_id: str = Field(primary_key=True, nullable=False, default="will be replaced")
     name: str = Field(index=True, unique=True)
     description: str | None = Field(default=None)
-
-
-class SavedThread(SavedThreadBase, table=True):
-    thread_id: str = Field(primary_key=True)
-
-
-# class SavedThreadPublic(SavedThreadBase):
-#     name: str
-#     description: str
-
-
-# class SavedThreadCreate(SavedThreadBase):
-#     name: str
-#     description: str
 
 
 # DB config
@@ -143,7 +130,7 @@ def on_startup():
 
 
 # Assistant threads
-@app.get("/api/v1/threads", response_model=list[SavedThreadBase])
+@app.get("/api/v1/threads", response_model=list[SavedThread])
 def list_saved_threads(session: SessionDep):
     """List all saved threads.
 
@@ -154,7 +141,7 @@ def list_saved_threads(session: SessionDep):
     return saved_sessions
 
 
-@app.get("/api/v1/threads/{name}", response_model=SavedThreadBase)
+@app.get("/api/v1/threads/{name}", response_model=SavedThread)
 def get_thread_by_name(session: SessionDep, name):
     """Return saved thread by its name.
 
@@ -166,8 +153,8 @@ def get_thread_by_name(session: SessionDep, name):
     return ses
 
 
-@app.post("/api/v1/threads/", response_model=SavedThreadBase)
-def new_thread(thread: SavedThreadBase, session: SessionDep):
+@app.post("/api/v1/threads/", response_model=SavedThread)
+def new_thread(thread: SavedThread, session: SessionDep):
     """Create new thread.
 
     :param thread:
@@ -175,11 +162,12 @@ def new_thread(thread: SavedThreadBase, session: SessionDep):
     :return:
     """
     _thread = client.beta.threads.create()
-    log.info("Created new thread with id %s", _thread.id)
-    db_thread = SavedThread(name=thread.name, description=thread.description, thread_id=_thread.id)
+    db_thread = SavedThread.model_validate(thread)
+    db_thread.thread_id = client.beta.threads.create().id
     session.add(db_thread)
     session.commit()
     session.refresh(db_thread)
+    log.info("Created new thread with id %s", _thread.id)
     return db_thread
 
 
@@ -201,7 +189,11 @@ def show_role(role: str):
     :param role:
     :return:
     """
-    system_role = load_system_role(role)
+    try:
+        system_role = load_system_role(role)
+    except LoadSystemRoleException as exc:
+        log.info("Role %s not found", role)
+        raise HTTPException(status_code=404, detail=f"Role {role} not found. {exc}")
     return {"msg": system_role}
 
 
@@ -252,7 +244,7 @@ def respond_as_assistant(instructions: str, prompt: str, session: SessionDep):
     """
     instructions = load_assistant_instructions(instructions)["description"]
     log.info("Assistant instructions: %s", instructions)
-    thread_name = "default"
+    thread_name = "default"  # TODO: Implement dynamic thread bane (id) selection
     if thread_name is not None:
         thread = session.exec(select(SavedThread).filter(SavedThread.name == thread_name)).first()
         thread_id = thread.thread_id
