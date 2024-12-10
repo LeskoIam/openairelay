@@ -7,8 +7,7 @@ import os
 
 import yaml
 
-from .config import SYSTEM_ROLES
-from .config import ASSISTANT_INSTRUCTIONS
+from .config import ASSISTANT_INSTRUCTIONS, SYSTEM_ROLES
 
 log = logging.getLogger("airelay")
 

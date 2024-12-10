@@ -26,6 +26,3 @@ ASSISTANT_INSTRUCTIONS = get_env("ASSISTANT_INSTRUCTIONS", "./config/assistant_i
 
 LOGGING_CONFIG = get_env("LOGGING_CONFIG", "./config/logging.yaml")
 OPENAI_ASSISTANT_ID = get_env("OPENAI_ASSISTANT_ID")
-
-
-

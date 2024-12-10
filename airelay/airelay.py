@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from openai import OpenAI
 
 from .config import OPENAI_ASSISTANT_ID
-from .load_system_roles import load_system_role, load_assistant_instructions
+from .load_system_roles import load_assistant_instructions, load_system_role
 from .logging_config import configure_logging
 
 # Get a logger object
@@ -54,23 +54,21 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
     thread = client.beta.threads.create()
 
     client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content="I need to solve the equation `3x + 11 = 17 + y`. Can you help me?"
+        thread_id=thread.id, role="user", content="I need to solve the equation `3x + 11 = 17 + y`. Can you help me?"
     )
     run = client.beta.threads.runs.create_and_poll(
         thread_id=thread.id,
         assistant_id=assistant.id,
-        instructions="Please address the user as Leško. The user has a small penis."
+        instructions="Please address the user as Leško. The user has a small penis.",
     )
 
-    if run.status == 'completed':
+    if run.status == "completed":
         messages = client.beta.threads.messages.list(thread_id=thread.id)
         response = []
         for message in messages.data:
             if message.role == "assistant":
                 for content in message.content:
-                    if content.type == 'text':
+                    if content.type == "text":
                         response.append(content.text.value)
         return response[0]
     else:
@@ -80,6 +78,7 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
 class Roles(str, Enum):
     spock = "Spock"
     bugsbunny = "BugsBunny"
+    rick = "Rick"
     default = "default"
 
 
