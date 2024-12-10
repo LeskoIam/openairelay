@@ -7,7 +7,8 @@ services:
       - "8088:8088"  # Adjust the port mappings as needed
     environment:
       - OPENAI_API_KEY="your-open-api-key"
-      - SYSTEM_ROLES=./airelay/settings/system_roles_tg6.yaml
-      - LOGGING_CONFIG=./logging.yaml
+#      - SYSTEM_ROLES=./airelay/settings/system_roles_tg6.yaml
+#      - LOGGING_CONFIG=./logging.yaml
       - TZ=Europe/Paris   # set to your own timezone https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-
+    volumes:
+      - ./config:/data/

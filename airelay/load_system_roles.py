@@ -8,6 +8,7 @@ import os
 import yaml
 
 from .config import SYSTEM_ROLES
+from .config import ASSISTANT_INSTRUCTIONS
 
 log = logging.getLogger("airelay")
 
@@ -56,5 +57,23 @@ def load_system_role(role: str):
         raise LoadSystemRoleException(f"System rolls file '{SYSTEM_ROLES}' does not exists.")
 
 
+def load_assistant_instructions(role: str):
+    print(ASSISTANT_INSTRUCTIONS)
+    if os.path.exists(ASSISTANT_INSTRUCTIONS):
+        with open(ASSISTANT_INSTRUCTIONS, "rt") as f:
+            system_roles = ci_dict(yaml.safe_load(f.read()))
+        _system_roles = {}
+        for _role, data in system_roles.items():
+            if not _role.startswith("."):
+                _system_roles[_role] = data
+        system_roles = _system_roles
+        log.info("Assistant instructions %s: %s", role, system_roles[role])
+        return system_roles[role]
+    else:
+        log.error(f"Assistant instructions file '{ASSISTANT_INSTRUCTIONS}' does not exists.")
+        raise LoadSystemRoleException(f"Assistant instructions file '{ASSISTANT_INSTRUCTIONS}' does not exists.")
+
+
 if __name__ == "__main__":
     print(load_system_role(role="spock"))
+    load_assistant_instructions("default")
