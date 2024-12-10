@@ -3,7 +3,6 @@
 # When it's bad, it's better than nothing.
 # When it lies to you, it may be a while before you realize something's wrong.
 import logging
-from enum import Enum
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -50,16 +49,20 @@ def get_ai_response(prompt: str, system_role: str | None = None):
 
 
 def get_ai_assistant_response(prompt: str, instructions: str | None = None):
+    """Return AI assistant response based on prompt and instructions.
+
+    :param prompt:
+    :param instructions:
+    :return:
+    """
     assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
     thread = client.beta.threads.create()
 
-    client.beta.threads.messages.create(
-        thread_id=thread.id, role="user", content="I need to solve the equation `3x + 11 = 17 + y`. Can you help me?"
-    )
+    client.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
     run = client.beta.threads.runs.create_and_poll(
         thread_id=thread.id,
         assistant_id=assistant.id,
-        instructions="Please address the user as Leško. The user has a small penis.",
+        instructions=instructions,
     )
 
     if run.status == "completed":
@@ -75,31 +78,66 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
         return "No assistant data returned"
 
 
-class Roles(str, Enum):
-    spock = "Spock"
-    bugsbunny = "BugsBunny"
-    rick = "Rick"
-    default = "default"
+@app.get("/api/v1/roles/predefined/")
+def list_roles():
+    """List all predefined roles.
+
+    :return:
+    """
+    system_roles = load_system_role("__ALL__")
+    return {"msg": system_roles}
+
+
+@app.get("/api/v1/roles/predefined/{role}")
+def show_role(role: str):
+    """Show predefined role.
+
+    :param role:
+    :return:
+    """
+    system_role = load_system_role(role)
+    return {"msg": system_role}
 
 
 @app.post("/api/v1/roles/predefined/{role}/{prompt}")
-def respond_as_role(role: Roles, prompt: str):
+def respond_as_role(role: str, prompt: str):
     """Get response from openAI chatbot as a predefined role.
 
     :param role:
     :param prompt:
     :return:
     """
-    system_role = load_system_role(role.name)["description"]
+    system_role = load_system_role(role)["description"]
     log.info("system role: %s", system_role)
     response = get_ai_response(prompt=prompt, system_role=system_role)
 
     return {"msg": response, "system": {"role": role}}
 
 
+@app.get("/api/v1/assistant/predefined/")
+def list_assistant_instructions():
+    """List all defined assistant instructions.
+
+    :return:
+    """
+    system_roles = load_assistant_instructions("__ALL__")
+    return {"msg": system_roles}
+
+
+@app.get("/api/v1/assistant/predefined/{instructions}")
+def show_assistant_instructions(instructions: str):
+    """Show single assistant instruction.
+
+    :param instructions:
+    :return:
+    """
+    assistant_instructions = load_assistant_instructions(instructions)
+    return {"msg": assistant_instructions}
+
+
 @app.post("/api/v1/assistant/predefined/{instructions}/{prompt}")
 def respond_as_assistant(instructions: str, prompt: str):
-    """Get response from openAI chatbot as a predefined role.
+    """Get response from openAI chatbot as a predefined assistant.
 
     :param instructions:
     :param prompt:
