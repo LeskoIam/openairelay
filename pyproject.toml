@@ -34,7 +34,7 @@ pythonpath = [
     "airelay",
 ]
 markers = [
-    "failsCI: marks tests that fail in CI",
+    "uses_tokens: marks tests that cost money",
 ]
 
 [tool.bumpver]

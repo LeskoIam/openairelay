@@ -57,6 +57,7 @@ def test_show_roles_assistants(client: TestClient, ra: str):
         assert len(test_response.json()["msg"]["description"]) > 10
 
 
+@pytest.mark.uses_tokens
 @pytest.mark.parametrize("role", ["spock", "bugsbunny", "default"])
 def test_roles(client: TestClient, role: str):
     """Check if all predefined roles can be reached."""
