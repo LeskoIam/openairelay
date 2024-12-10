@@ -5,7 +5,7 @@
 import logging
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from openai import OpenAI
 
 from .config import OPENAI_ASSISTANT_ID
@@ -55,6 +55,9 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
     :param instructions:
     :return:
     """
+    if OPENAI_ASSISTANT_ID is None:
+        raise HTTPException(status_code=503, detail="OPENAI_ASSISTANT_ID is not defined in environment")
+    log.info("OPENAI_ASSISTANT_ID: %s", OPENAI_ASSISTANT_ID)
     assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
     thread = client.beta.threads.create()
 
@@ -75,7 +78,7 @@ def get_ai_assistant_response(prompt: str, instructions: str | None = None):
                         response.append(content.text.value)
         return response[0]
     else:
-        return "No assistant data returned"
+        raise HTTPException(status_code=504, detail="Run did not complete")
 
 
 #                           #######

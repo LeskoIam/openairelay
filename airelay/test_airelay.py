@@ -15,14 +15,14 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-@pytest.mark.parametrize("ra", ["roles", "assistants"])
-def test_list_roles_assistants(client: TestClient, ra: str):
+@pytest.mark.parametrize("functionality", ["roles", "assistants"])
+def test_list_roles_assistants(client: TestClient, functionality: str):
     """Test if roles and assistants API endpoints are reachable.
 
     :param client:
-    :param ra:
+    :param functionality:
     """
-    response = client.get(f"/api/v1/{ra}")
+    response = client.get(f"/api/v1/{functionality}")
 
     assert response.status_code == 200
     log.info(response.json())
@@ -36,14 +36,14 @@ def test_list_roles_assistants(client: TestClient, ra: str):
         assert len(desc["description"]) > 10
 
 
-@pytest.mark.parametrize("ra", ["roles", "assistants"])
-def test_show_roles_assistants(client: TestClient, ra: str):
+@pytest.mark.parametrize("functionality", ["roles", "assistants"])
+def test_show_roles_assistants(client: TestClient, functionality: str):
     """Test if roles and assistants API endpoints contain details ["description"] key.
 
     :param client:
-    :param ra:
+    :param functionality:
     """
-    response = client.get(f"/api/v1/{ra}")
+    response = client.get(f"/api/v1/{functionality}")
 
     assert response.status_code == 200
     log.info("response.json(): %s", response.json())
@@ -52,13 +52,13 @@ def test_show_roles_assistants(client: TestClient, ra: str):
     for role, desc in messages.items():
         log.info("\trole: %s", role)
         log.info("\tdesc: %s", desc)
-        test_response = client.get(f"/api/v1/{ra}/{role}")
+        test_response = client.get(f"/api/v1/{functionality}/{role}")
         log.info("\t\ttest_response.json()%s", test_response.json())
         assert len(test_response.json()["msg"]["description"]) > 10
 
 
 @pytest.mark.uses_tokens
-@pytest.mark.parametrize("role", ["spock", "bugsbunny", "default"])
+@pytest.mark.parametrize("role", ["Spock", "BugsBunny", "default"])
 def test_roles(client: TestClient, role: str):
     """Check if all predefined roles can be reached."""
 

@@ -12,6 +12,7 @@ No fields are mandatory except for `OPENAI_API_KEY`
 LOGGING_CONFIG=./config/logging.yaml
 
 OPENAI_API_KEY="your-open-api-key"
+# If no OPENAI_ASSISTANT_ID is defined then assistant functionality can't be used.
 OPENAI_ASSISTANT_ID="your-open-ai-assistant-id"
 
 # Defaults to `./config/system_roles.yaml`
@@ -24,16 +25,20 @@ ASSISTANT_INSTRUCTIONS=./config/assistant_instructions.yaml
 You can use your own locations and files for settings as you define them with environment variables.
 
 ### Roles
-Take a look at: `config/system_roles.yaml`
+Roles are predefined "personalities" for AI.
+
+They are defined in configuration `.yaml` file, default one is `config/system_roles.yaml`.
 
 ### Assistant instructions
-Take a look at: `config/assistant_instructions.yaml`
+Assistant instructions predefined "instructions" on what we use our AI for.
+
+Instructions are defined in configuration `.yaml` file, default one is `config/assistant_instructions.yaml`.
 
 ## Run
 ```shell
 fastapi run src/airelay.py --host=0.0.0.0 --port=8088 --reload
 ```
-Accessible at: http://localhost:8088/docs
+Documentation accessible at: http://localhost:8088/docs
 
 ## Home Assistant
 
@@ -74,5 +79,4 @@ actions:
         data:
           ttl: 0
           priority: high
-
 ```

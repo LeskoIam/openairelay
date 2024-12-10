@@ -19,23 +19,6 @@ class LoadSystemRoleException(Exception):
 class LoadAssistantInstructionsException(Exception):
     pass
 
-#
-# class ci_dict(dict):  # noqa: N801
-#     def __init__(self, _dict: dict):
-#         """Case-insensitive dictionary
-#
-#         :param _dict: input dict
-#         """
-#         super().__init__()
-#         for k, v in _dict.items():
-#             self.__setitem__(k, v)
-#
-#     def __setitem__(self, key, value):
-#         super().__setitem__(key.lower(), value)
-#
-#     def __getitem__(self, key):
-#         return super().__getitem__(key.lower())
-
 
 def load_system_role(role: str):
     """Load system role configuration file.

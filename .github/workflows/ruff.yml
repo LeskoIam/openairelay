@@ -16,4 +16,4 @@ jobs:
 
       - name: Ruff format
         if: always()
-        run: ruff format --check
+        run: ruff format --diff
