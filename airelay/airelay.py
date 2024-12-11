@@ -156,20 +156,21 @@ def get_thread_by_name(session: SessionDep, name):
 
 
 @app.post("/api/v1/threads/", response_model=SavedThread)
-def new_thread(thread: SavedThread, session: SessionDep):
+def create_thread(thread: SavedThread, session: SessionDep):
     """Create new thread. TODO: Add tests - mock openAI call?
 
     :param thread:
     :param session:
     :return:
     """
-    _thread = client.beta.threads.create()
     db_thread = SavedThread.model_validate(thread)
-    db_thread.thread_id = client.beta.threads.create().id
+    new_thread = client.beta.threads.create()
+    db_thread.thread_id = new_thread.id
+
     session.add(db_thread)
     session.commit()
     session.refresh(db_thread)
-    log.info("Created new thread with id %s", _thread.id)
+    log.info("Created new thread with id %s", new_thread.id)
     return db_thread
 
 

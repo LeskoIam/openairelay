@@ -4,16 +4,44 @@ from types import NoneType
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel.pool import StaticPool
 
-from .airelay import app
+from .airelay import app, get_session
 
 log = logging.getLogger("pytest")
 
 
-@pytest.fixture(scope="session")
-def client() -> TestClient:
+@pytest.fixture
+def session() -> Session:
+    """Get DB session."""
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        yield session
+
+
+@pytest.fixture(scope="function")
+def client(session: Session, api_base) -> TestClient:
     """Get fastapi TestClient"""
-    return TestClient(app)
+
+    def get_session_override():
+        return session
+
+    app.dependency_overrides[get_session] = get_session_override
+    client = TestClient(app)
+    # Fill DB with test data
+    threads = (
+        ("default", "Default thread"),
+        ("no_description", None),
+    )
+    for thread in threads:
+        response = client.post(
+            f"{api_base}/threads/", json={"name": thread[0], "thread_id": "", "description": thread[1]}
+        )
+    assert response.status_code == 200
+    yield client
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="function")
@@ -65,7 +93,7 @@ def test_get_thread_by_name(client: TestClient, api_base):
     rjson: dict = response.json()
     log.info("rjson: %s", rjson)
     assert rjson.get("name") == name
-    assert rjson.get("description") in (None, "default")
+    assert rjson.get("description") == "Default thread"
     assert rjson.get("thread_id", False)
 
 
@@ -152,3 +180,17 @@ def test_assistant_is_answering(client: TestClient, api_base: str):
 
     for mkey in ["msg", "system"]:
         assert mkey in rjson
+
+
+@pytest.mark.uses_tokens
+def test_create_thread(client: TestClient, api_base):
+    """Check if new thread can be created."""
+
+    response = client.post(
+        f"{api_base}/threads/", json={"name": "Deadpond", "thread_id": "Dive Wilson", "description": None}
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["name"] == "Deadpond"
+    assert data["description"] is None

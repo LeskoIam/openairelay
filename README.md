@@ -1,4 +1,6 @@
 # openAIRelay
+[![test](https://github.com/LeskoIam/openairelay/actions/workflows/test.yml/badge.svg)](https://github.com/LeskoIam/openairelay/actions/workflows/test.yml)
+[![ruff](https://github.com/LeskoIam/openairelay/actions/workflows/ruff.yml/badge.svg)](https://github.com/LeskoIam/openairelay/actions/workflows/ruff.yml)
 
 It's a relay between openAI API and local network API. Useful for things like [Home Assistant](https://www.home-assistant.io/).
 
@@ -62,7 +64,7 @@ actions:
     # This is the {{ prompt }} variable from above
     prompt: >-
       In two sentences remind me I need to make cake.
-      But I have no idea cake is lie.
+      But I have no idea cake is a lie.
   response_variable: ai_response
 - if: "{{ ai_response['status'] == 200 }}"
   then:
