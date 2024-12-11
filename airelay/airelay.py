@@ -4,6 +4,7 @@
 # When it lies to you, it may be a while before you realize something's wrong.
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Annotated
 
 from dotenv import load_dotenv
@@ -73,7 +74,7 @@ def get_ai_assistant_response(prompt: str, thread_id: str | None = None) -> tupl
     log.info("OPENAI_ASSISTANT_ID: %s", OPENAI_ASSISTANT_ID)
     assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
     if thread_id is None:
-        log.info("No thread_id defined, Creating new thread.")
+        log.info("No thread_id defined, creating new thread.")
         thread = client.beta.threads.create()
         thread_id = thread.id
     log.info(thread_id)
@@ -99,6 +100,7 @@ class SavedThread(SQLModel, table=True):
     thread_id: str = Field(primary_key=True, nullable=False, default="will be replaced")
     name: str = Field(index=True, unique=True)
     description: str | None = Field(default=None)
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
 # DB config
@@ -157,7 +159,7 @@ def get_thread_by_name(session: SessionDep, name):
 
 @app.post("/api/v1/threads/", response_model=SavedThread)
 def create_thread(thread: SavedThread, session: SessionDep):
-    """Create new thread. TODO: Add tests - mock openAI call?
+    """Create new thread. TODO: mock openAI call?
 
     :param thread:
     :param session:

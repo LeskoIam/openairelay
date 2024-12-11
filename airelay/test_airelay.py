@@ -196,9 +196,8 @@ def test_assistant_is_answering(client: TestClient, api_base: str, populate_db_v
     rjson = response.json()
     log.info(rjson)
     assert rjson
-
-    for mkey in ["msg", "system"]:
-        assert mkey in rjson
+    assert "msg" in rjson
+    assert "system" in rjson
 
 
 @pytest.mark.uses_tokens
@@ -211,5 +210,7 @@ def test_create_thread(client: TestClient, api_base):
     assert response.status_code == 200
 
     data = response.json()
+    log.info("data: %s", data)
+
     assert data["name"] == "Deadpond"
     assert data["description"] is None
