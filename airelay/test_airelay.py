@@ -1,28 +1,32 @@
 import logging
+import os
 import urllib
 from types import NoneType
 
 import pytest
+from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from .airelay import app, get_session
+from .airelay import SavedThread, app, get_session
 
 log = logging.getLogger("pytest")
+load_dotenv()
 
 
-@pytest.fixture
-def session() -> Session:
+@pytest.fixture(name="session")
+def session_fixture() -> Session:
     """Get DB session."""
+
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
 
 
-@pytest.fixture(scope="function")
-def client(session: Session, api_base) -> TestClient:
+@pytest.fixture(name="client")
+def client_fixture(session: Session, api_base) -> TestClient:
     """Get fastapi TestClient"""
 
     def get_session_override():
@@ -30,18 +34,33 @@ def client(session: Session, api_base) -> TestClient:
 
     app.dependency_overrides[get_session] = get_session_override
     client = TestClient(app)
-    # Fill DB with test data
-    threads = (
-        ("default", "Default thread"),
-        ("no_description", None),
-    )
-    for thread in threads:
-        response = client.post(
-            f"{api_base}/threads/", json={"name": thread[0], "thread_id": "", "description": thread[1]}
-        )
-    assert response.status_code == 200
     yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def populate_db(session: Session):
+    """Fill DB with test data"""
+
+    threads = (
+        ("default", "thid_1", "Default thread"),
+        ("no_description", "thid_2", None),
+    )
+    for thread in threads:
+        default_thread = SavedThread(name=thread[0], thread_id=thread[1], description=thread[2])
+        session.add(default_thread)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
+def populate_db_valid_thread_id(session: Session):
+    """Fill DB with test data"""
+    valid_id = os.getenv("VALID_THREAD_ID")
+    if valid_id is None:
+        pytest.xfail("VALID_THREAD_ID not set.")
+    default_thread = SavedThread(name="default", thread_id=valid_id, description="Default thread")
+    session.add(default_thread)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -65,7 +84,7 @@ def test_api_docs(client: TestClient, api_docs: str):
     assert response.status_code == 200
 
 
-def test_get_threads(client: TestClient, api_base):
+def test_get_threads(client: TestClient, api_base: str, populate_db):
     """Check if list of saved threads is returned and do check on data correctness."""
 
     response = client.get(f"{api_base}/threads")
@@ -83,7 +102,7 @@ def test_get_threads(client: TestClient, api_base):
     assert isinstance(thread.get("description"), NoneType | str)
 
 
-def test_get_thread_by_name(client: TestClient, api_base):
+def test_get_thread_by_name(client: TestClient, api_base: str, populate_db):
     """Check if we can retrieve saved thread by its name."""
 
     name = "default"
@@ -97,7 +116,7 @@ def test_get_thread_by_name(client: TestClient, api_base):
     assert rjson.get("thread_id", False)
 
 
-def test_get_thread_by_name_missing_name(client: TestClient, api_base):
+def test_get_thread_by_name_missing_name(client: TestClient, api_base: str, populate_db):
     """Check if getting non-existing name fails gracefully with 404"""
 
     name = "non_existing_thread"
@@ -166,7 +185,7 @@ def test_role_is_answering(client: TestClient, api_base: str):
 
 
 @pytest.mark.uses_tokens
-def test_assistant_is_answering(client: TestClient, api_base: str):
+def test_assistant_is_answering(client: TestClient, api_base: str, populate_db_valid_thread_id):
     """Check if assistant can be reached."""
 
     prompt = urllib.parse.quote("Test question. What is 2 + 2?", safe="")
