@@ -16,10 +16,6 @@ class LoadSystemRoleException(Exception):
     pass
 
 
-class LoadAssistantInstructionsException(Exception):
-    pass
-
-
 def load_system_role(role: str):
     """Load system role configuration file.
 

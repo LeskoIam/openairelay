@@ -3,11 +3,13 @@
 # When it's bad, it's better than nothing.
 # When it lies to you, it may be a while before you realize something's wrong.
 import logging
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from openai import OpenAI
+from sqlalchemy.exc import NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from .config import OPENAI_ASSISTANT_ID
@@ -19,7 +21,16 @@ configure_logging()
 log = logging.getLogger("airelay")
 
 load_dotenv()
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create DB on startup."""
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 client = OpenAI()
 
 
@@ -116,12 +127,6 @@ SessionDep = Annotated[Session, Depends(get_session)]
 #                           #######
 
 
-@app.on_event("startup")
-def on_startup():
-    """Create DB on startup."""
-    create_db_and_tables()
-
-
 # Assistant threads
 @app.get("/api/v1/threads", response_model=list[SavedThread])
 def list_saved_threads(session: SessionDep):
@@ -142,13 +147,17 @@ def get_thread_by_name(session: SessionDep, name):
     :param name:
     :return:
     """
-    ses = session.exec(select(SavedThread).filter(SavedThread.name == name)).first()
-    return ses
+    try:
+        thread = session.exec(select(SavedThread).where(SavedThread.name == name)).one()
+    except NoResultFound as exc:
+        log.info("Thread %s not found", name)
+        raise HTTPException(status_code=404, detail=f"Role {name} not found") from exc
+    return thread
 
 
 @app.post("/api/v1/threads/", response_model=SavedThread)
 def new_thread(thread: SavedThread, session: SessionDep):
-    """Create new thread.
+    """Create new thread. TODO: Add tests - mock openAI call?
 
     :param thread:
     :param session:
@@ -206,7 +215,7 @@ def respond_as_role(role: str, prompt: str):
 
 
 # Assistant
-@app.post("/api/v1/assistants/{prompt}")
+@app.post("/api/v1/assistant/{prompt}")
 def respond_as_assistant(prompt: str, session: SessionDep):
     """Get response from openAI chatbot as assistant.
 
@@ -216,7 +225,7 @@ def respond_as_assistant(prompt: str, session: SessionDep):
     log.info("Assistant prompt: %s", prompt)
     thread_name = "default"  # TODO: Implement dynamic thread name (id) selection
     if thread_name is not None:
-        thread = session.exec(select(SavedThread).filter(SavedThread.name == thread_name)).first()
+        thread = session.exec(select(SavedThread).where(SavedThread.name == thread_name)).one()
         thread_id = thread.thread_id
         log.info("Existing thread %s will be used", thread)
     else:
