@@ -17,11 +17,9 @@ OPENAI_ASSISTANT_ID="your-open-ai-assistant-id"
 
 # Defaults to `./config/system_roles.yaml`
 SYSTEM_ROLES=./config/system_roles.yaml
-# Defaults to `./config/assistant_instructions.yaml`
-ASSISTANT_INSTRUCTIONS=./config/assistant_instructions.yaml
 ```
 
-## Roles and Assistant settings
+## Roles settings
 You can use your own locations and files for settings as you define them with environment variables.
 
 ### Roles
@@ -29,10 +27,6 @@ Roles are predefined "personalities" for AI.
 
 They are defined in configuration `.yaml` file, default one is `config/system_roles.yaml`.
 
-### Assistant instructions
-Assistant instructions predefined "instructions" on what we use our AI for.
-
-Instructions are defined in configuration `.yaml` file, default one is `config/assistant_instructions.yaml`.
 
 ## Run
 ```shell

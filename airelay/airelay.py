@@ -11,7 +11,7 @@ from openai import OpenAI
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from .config import OPENAI_ASSISTANT_ID
-from .load_system_roles import LoadSystemRoleException, load_assistant_instructions, load_system_role
+from .load_system_roles import LoadSystemRoleException, load_system_role
 from .logging_config import configure_logging
 
 # Get a logger object
@@ -50,13 +50,10 @@ def get_ai_response(prompt: str, system_role: str | None = None):
     return completion.choices[0].message.content
 
 
-def get_ai_assistant_response(
-    prompt: str, instructions: str | None = None, thread_id: str | None = None
-) -> tuple[str, str]:
+def get_ai_assistant_response(prompt: str, thread_id: str | None = None) -> tuple[str, str]:
     """Return AI assistant response based on prompt and instructions.
 
     :param prompt:
-    :param instructions:
     :param thread_id:
     :return:
     """
@@ -71,12 +68,7 @@ def get_ai_assistant_response(
     log.info(thread_id)
 
     client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
-    run = client.beta.threads.runs.create_and_poll(
-        thread_id=thread_id,
-        assistant_id=assistant.id,
-        # instructions=instructions,  # TODO: Do I change the original instructions here?
-    )
-    log.info(run.instructions)
+    run = client.beta.threads.runs.create_and_poll(thread_id=thread_id, assistant_id=assistant.id)
 
     if run.status == "completed":
         messages = client.beta.threads.messages.list(thread_id=thread_id)
@@ -214,37 +206,14 @@ def respond_as_role(role: str, prompt: str):
 
 
 # Assistant
-@app.get("/api/v1/assistants/")
-def list_assistant_instructions():
-    """List all defined assistant instructions.
-
-    :return:
-    """
-    system_roles = load_assistant_instructions("__ALL__")
-    return {"msg": system_roles}
-
-
-@app.get("/api/v1/assistants/{instructions}")
-def show_assistant_instructions(instructions: str):
-    """Show single assistant instruction.
-
-    :param instructions:
-    :return:
-    """
-    assistant_instructions = load_assistant_instructions(instructions)
-    return {"msg": assistant_instructions}
-
-
-@app.post("/api/v1/assistants/{instructions}/{prompt}")
-def respond_as_assistant(instructions: str, prompt: str, session: SessionDep):
+@app.post("/api/v1/assistants/{prompt}")
+def respond_as_assistant(prompt: str, session: SessionDep):
     """Get response from openAI chatbot as assistant.
 
-    :param instructions:
     :param prompt:
     :return:
     """
-    instructions = load_assistant_instructions(instructions)["description"]
-    log.info("Assistant instructions: %s", instructions)
+    log.info("Assistant prompt: %s", prompt)
     thread_name = "default"  # TODO: Implement dynamic thread name (id) selection
     if thread_name is not None:
         thread = session.exec(select(SavedThread).filter(SavedThread.name == thread_name)).first()
@@ -253,8 +222,8 @@ def respond_as_assistant(instructions: str, prompt: str, session: SessionDep):
     else:
         log.info("No thread id for %s, new thread will be created", thread_name)
         thread_id = None
-    response, thread_id = get_ai_assistant_response(prompt=prompt, instructions=instructions, thread_id=thread_id)
-    return {"msg": response, "system": {"instructions": instructions, "thread_id": thread_id}}
+    response, thread_id = get_ai_assistant_response(prompt=prompt, thread_id=thread_id)
+    return {"msg": response, "system": {"thread_id": thread_id}}
 
 
 # fastapi run airelay/airelay.py --host=0.0.0.0 --port=8088 --reload
