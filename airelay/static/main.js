@@ -57,7 +57,7 @@
       newRow.innerHTML = `
        <tr>
          <td>${k}</td>
-         <td>${res.msg[k].description}</td>
+         <td><md-block>${res.msg[k].description}</md-block></td>
        </tr>`;
     }
   })
