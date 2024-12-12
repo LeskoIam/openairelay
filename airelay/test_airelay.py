@@ -15,6 +15,11 @@ log = logging.getLogger("pytest")
 load_dotenv()
 
 
+############
+# Fixtures #
+############
+
+
 @pytest.fixture(name="session")
 def session_fixture() -> Session:
     """Get DB session."""
@@ -39,7 +44,7 @@ def client_fixture(session: Session, api_base) -> TestClient:
 
 
 @pytest.fixture(scope="function")
-def populate_db(session: Session):
+def populate_db_fake_thread_id(session: Session):
     """Fill DB with test data"""
 
     threads = (
@@ -77,6 +82,26 @@ def api_docs() -> str:
     return "/docs"
 
 
+@pytest.fixture
+def mock_thread_object():
+    """Mock Thread object so that we don't create new Threads for every test run.
+
+    :return: MockThreadObject with id attr set to "id"
+    """
+    
+    log.info("MockThreadObject created")
+
+    class MockThreadObject:
+        id = "id"
+
+    return MockThreadObject()
+
+
+#########
+# TESTS #
+#########
+
+
 def test_api_docs(client: TestClient, api_docs: str):
     """Quick smoke test"""
 
@@ -84,7 +109,30 @@ def test_api_docs(client: TestClient, api_docs: str):
     assert response.status_code == 200
 
 
-def test_get_threads(client: TestClient, api_base: str, populate_db):
+@pytest.mark.uses_tokens
+@pytest.mark.mock
+def test_create_thread(client: TestClient, api_base: str, mocker, mock_thread_object):
+    """Check if new thread can be created."""
+
+    # Mock
+    mock_thread_object.id = "mocked_test_id_01"
+    mocker.patch("airelay.airelay.get_new_thread", return_value=mock_thread_object)
+
+    response = client.post(
+        f"{api_base}/threads/", json={"name": "Deadpond", "thread_id": "Dive Wilson", "description": None}
+    )
+    log.info(response)
+    assert response.status_code == 200
+
+    data = response.json()
+    log.info("data: %s", data)
+
+    assert data["name"] == "Deadpond"
+    assert data["description"] is None
+    assert data["thread_id"] == mock_thread_object.id
+
+
+def test_get_threads(client: TestClient, api_base: str, populate_db_fake_thread_id):
     """Check if list of saved threads is returned and do check on data correctness."""
 
     response = client.get(f"{api_base}/threads")
@@ -102,7 +150,7 @@ def test_get_threads(client: TestClient, api_base: str, populate_db):
     assert isinstance(thread.get("description"), NoneType | str)
 
 
-def test_get_thread_by_name(client: TestClient, api_base: str, populate_db):
+def test_get_thread_by_name(client: TestClient, api_base: str, populate_db_fake_thread_id):
     """Check if we can retrieve saved thread by its name."""
 
     name = "default"
@@ -116,7 +164,7 @@ def test_get_thread_by_name(client: TestClient, api_base: str, populate_db):
     assert rjson.get("thread_id", False)
 
 
-def test_get_thread_by_name_missing_name(client: TestClient, api_base: str, populate_db):
+def test_get_thread_by_name_missing_name(client: TestClient, api_base: str, populate_db_fake_thread_id):
     """Check if getting non-existing name fails gracefully with 404"""
 
     name = "non_existing_thread"
@@ -141,7 +189,7 @@ def test_list_roles(client: TestClient, api_base: str):
         assert len(desc["description"]) > 10
 
 
-def test_show_role(client: TestClient, api_base):
+def test_show_role(client: TestClient, api_base: str):
     """Check if roles API endpoint contain details ["description"] key.
 
     :param client:
@@ -179,9 +227,8 @@ def test_role_is_answering(client: TestClient, api_base: str):
     rjson = response.json()
     log.info(rjson)
     assert rjson
-
-    for mkey in ["msg", "system"]:
-        assert mkey in rjson
+    assert "msg" in rjson
+    assert "system" in rjson
 
 
 @pytest.mark.uses_tokens
@@ -198,19 +245,3 @@ def test_assistant_is_answering(client: TestClient, api_base: str, populate_db_v
     assert rjson
     assert "msg" in rjson
     assert "system" in rjson
-
-
-@pytest.mark.uses_tokens
-def test_create_thread(client: TestClient, api_base):
-    """Check if new thread can be created."""
-
-    response = client.post(
-        f"{api_base}/threads/", json={"name": "Deadpond", "thread_id": "Dive Wilson", "description": None}
-    )
-    assert response.status_code == 200
-
-    data = response.json()
-    log.info("data: %s", data)
-
-    assert data["name"] == "Deadpond"
-    assert data["description"] is None

@@ -36,6 +36,7 @@ pythonpath = [
 
 markers = [
     "uses_tokens: marks tests that cost money",
+    "mock: mark tests that use mock/s",
 ]
 
 

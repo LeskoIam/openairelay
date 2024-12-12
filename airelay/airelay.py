@@ -10,6 +10,7 @@ from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from openai import OpenAI
+from openai.types.beta import Thread
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -32,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-client = OpenAI()
+openai_client = OpenAI()
 
 
 def get_ai_response(prompt: str, system_role: str | None = None):
@@ -51,7 +52,7 @@ def get_ai_response(prompt: str, system_role: str | None = None):
     # default_system_role = "You are a scientist with keen eye for details. As such your responses are full of detail."
     if system_role is not None:
         default_system_role = system_role
-    completion = client.chat.completions.create(
+    completion = openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": default_system_role},
@@ -60,6 +61,14 @@ def get_ai_response(prompt: str, system_role: str | None = None):
     )
 
     return completion.choices[0].message.content
+
+
+def get_new_thread() -> Thread:
+    """Get new Assistant thread.
+
+    :return: Thread object
+    """
+    return openai_client.beta.threads.create()
 
 
 def get_ai_assistant_response(prompt: str, thread_id: str | None = None) -> tuple[str, str]:
@@ -72,18 +81,18 @@ def get_ai_assistant_response(prompt: str, thread_id: str | None = None) -> tupl
     if OPENAI_ASSISTANT_ID is None:
         raise HTTPException(status_code=503, detail="OPENAI_ASSISTANT_ID is not defined in environment")
     log.info("OPENAI_ASSISTANT_ID: %s", OPENAI_ASSISTANT_ID)
-    assistant = client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
+    assistant = openai_client.beta.assistants.retrieve(OPENAI_ASSISTANT_ID)
     if thread_id is None:
         log.info("No thread_id defined, creating new thread.")
-        thread = client.beta.threads.create()
+        thread = get_new_thread()
         thread_id = thread.id
     log.info(thread_id)
 
-    client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
-    run = client.beta.threads.runs.create_and_poll(thread_id=thread_id, assistant_id=assistant.id)
+    openai_client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
+    run = openai_client.beta.threads.runs.create_and_poll(thread_id=thread_id, assistant_id=assistant.id)
 
     if run.status == "completed":
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
+        messages = openai_client.beta.threads.messages.list(thread_id=thread_id)
         response = []
         for message in messages.data:
             if message.role == "assistant":
@@ -159,14 +168,14 @@ def get_thread_by_name(session: SessionDep, name):
 
 @app.post("/api/v1/threads/", response_model=SavedThread)
 def create_thread(thread: SavedThread, session: SessionDep):
-    """Create new thread. TODO: mock openAI call?
+    """Create new thread.
 
     :param thread:
     :param session:
     :return:
     """
     db_thread = SavedThread.model_validate(thread)
-    new_thread = client.beta.threads.create()
+    new_thread = get_new_thread()
     db_thread.thread_id = new_thread.id
 
     session.add(db_thread)
