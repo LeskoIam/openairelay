@@ -237,7 +237,7 @@ def test_assistant_is_answering(client: TestClient, api_base: str, populate_db_v
 
     prompt = urllib.parse.quote("Test question. What is 2 + 2?", safe="")
     log.info(prompt)
-    response = client.post(f"{api_base}/assistant/{prompt}")
+    response = client.post(f"{api_base}/assistant/{prompt}/default")
     assert response.status_code == 200
 
     rjson = response.json()

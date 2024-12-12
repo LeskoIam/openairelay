@@ -33,7 +33,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-# DB config
+#                        #############
+# ######################## DB config ##########################
+#                        #############
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
@@ -54,12 +57,12 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
+
 #                           #######
 # ########################### API #############################
 #                           #######
 
 
-# Assistant threads
 @app.get("/api/v1/threads", response_model=list[SavedThread])
 def list_saved_threads(session: SessionDep):
     """List all saved threads.
@@ -148,23 +151,38 @@ def respond_as_role(role: str, prompt: str):
 
 
 # Assistant
-@app.post("/api/v1/assistant/{prompt}")
-def respond_as_assistant(prompt: str, session: SessionDep):
+@app.post("/api/v1/assistant/{prompt}/{thread_name}")
+def respond_as_assistant(prompt: str, thread_name: str, session: SessionDep, create: bool = False):
     """Get response from openAI chatbot as assistant.
 
     :param prompt:
     :return:
     """
     log.info("Assistant prompt: %s", prompt)
-    thread_name = "default"  # TODO: Implement dynamic thread name (id) selection
-    if thread_name is not None:
-        thread = session.exec(select(SavedThread).where(SavedThread.name == thread_name)).one()
+    if create:
+        log.info("New thread '%s' will be created", thread_name)
+        response, thread_id = get_ai_assistant_response(prompt=prompt, thread_id=None)
+    else:
+        try:
+            thread = session.exec(select(SavedThread).where(SavedThread.name == thread_name)).one()
+            log.info("Thread '%s' found", thread_name)
+        except NoResultFound as exc:
+            log.info("Thread '%s' not found", thread_name)
+            try:
+                thread = session.exec(select(SavedThread).where(SavedThread.name == "default")).one()
+                log.info("Thread 'default' found")
+            except NoResultFound:
+                log.warning(
+                    "'default' thread not found. Set default thread id with environment variable "
+                    "'VALID_THREAD_ID'. E.g.: 'thread_kxEvEGnowayaligatorA9Twg'"
+                )
+                raise HTTPException(
+                    status_code=404, detail=f"'{thread_name}' and 'default' thread not found in database"
+                ) from exc
         thread_id = thread.thread_id
         log.info("Existing thread %s will be used", thread)
-    else:
-        log.info("No thread id for %s, new thread will be created", thread_name)
-        thread_id = None
-    response, thread_id = get_ai_assistant_response(prompt=prompt, thread_id=thread_id)
+        response, thread_id = get_ai_assistant_response(prompt=prompt, thread_id=thread_id)
+
     return {"msg": response, "system": {"thread_id": thread_id}}
 
 
