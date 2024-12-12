@@ -1,5 +1,4 @@
 import logging
-import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -7,10 +6,10 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from config import DEFAULT_THREAD_ID
+from .config import DEFAULT_THREAD_ID
 from .load_system_roles import LoadSystemRoleException, load_system_role
 from .logging_config import configure_logging
 from .models import SavedThread
@@ -49,8 +48,10 @@ def create_db_and_tables():
     """Create all DB."""
     SQLModel.metadata.create_all(engine)
     if DEFAULT_THREAD_ID is None:
-        log.warning("DEFAULT_THREAD_ID not defined. Please check documentation to learn how to generate one. "
-                    "Hint: use `api/v1/threads/` and name it `default`")
+        log.warning(
+            "DEFAULT_THREAD_ID not defined. Please check documentation to learn how to generate one. "
+            "Hint: use `api/v1/threads/` and name it `default`"
+        )
         return
     s = SavedThread(name="default", thread_id=DEFAULT_THREAD_ID, description="Auto added default thread id")
     with Session(engine) as session:
@@ -60,8 +61,10 @@ def create_db_and_tables():
             try:
                 session.commit()
             except IntegrityError:
-                log.warning("Couldn't add default thread id, it could be it is already added "
-                            "or that thread_id is already added under some other name")
+                log.warning(
+                    "Couldn't add default thread id, it could be it is already added "
+                    "or that thread_id is already added under some other name"
+                )
 
 
 def get_session():

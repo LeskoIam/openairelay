@@ -3,10 +3,39 @@
 [![ruff](https://github.com/LeskoIam/openairelay/actions/workflows/ruff.yml/badge.svg)](https://github.com/LeskoIam/openairelay/actions/workflows/ruff.yml)
 
 It's a relay between openAI API and local network API. Useful for things like [Home Assistant](https://www.home-assistant.io/).
-
 > You DO NEED an openAI API key (paid).
 
-## `.env` file
+
+## Features
+### Basic conversations and prompt answering
+Using openAI chat completion and predefined roles.
+
+Roles are described in a file (default one is `config/system_roles.yaml`.) in `.yaml` format in the following format:
+```yaml
+name:
+  description: "description"
+```
+e.g.:
+```yaml
+Spock:
+  description: >-
+    You are science officer Spock from Star Trek.
+
+BugsBunny:
+  description: >-
+    You are Bugs Bunny rabbit from Looney Tunes cartoons.
+
+Rick:
+  description: >-
+    You are Rick from Rick and Morty show.
+```
+
+### Predefined openAI assistant
+
+Using AI Assistant that is already defined.
+
+## Configuration
+### `.env` file
 No fields are mandatory except for `OPENAI_API_KEY`
 
 ```.dotenv
@@ -21,20 +50,31 @@ OPENAI_ASSISTANT_ID="your-open-ai-assistant-id"
 SYSTEM_ROLES=./config/system_roles.yaml
 ```
 
-## Roles settings
-You can use your own locations and files for settings as you define them with environment variables.
-
-### Roles
-Roles are predefined "personalities" for AI.
-
-They are defined in configuration `.yaml` file, default one is `config/system_roles.yaml`.
-
-
 ## Run
 ```shell
-fastapi run src/airelay.py --host=0.0.0.0 --port=8088 --reload
+fastapi run src/airelay.py --host=0.0.0.0 --port=8088
 ```
-Documentation accessible at: http://localhost:8088/docs
+### Documentation
+Small UI accessible at: http://localhost:8088
+
+API documentation accessible at: http://localhost:8088/docs
+
+### First setup
+Head to http://localhost:8088 and check if any Threads show up. If not do the following:
+- open http://localhost:8088/docs
+- expand `post` `/api/vi/threads`
+- click `Try it out` button
+- replace data in
+  ```json
+  {
+    "thread_id": "will be replaced",
+    "name": "default",
+    "description": "Your thread description.",
+    "timestamp": "2024-12-12T11:39:47.071Z"
+  }
+  ```
+- click `Execute`
+- head to http://localhost:8088 default thread should be visible
 
 ## Home Assistant
 
@@ -50,8 +90,10 @@ rest_command:
       method: POST
     
     ai_get_assistant_reply:
-      url: http://192.168.0.201:8088/api/v1/assistants/default/{{ prompt }}
-      timeout: 30
+      # Here you can select which thread to use in the bellow case 'default' role is selected (e.g.: '.../default')
+      # Same as with roles you can define some input helper and have thread be dynamic 
+      url: http://192.168.0.201:8088/api/v1/assistant/{{ prompt }}/default
+      timeout: 60  # It can take some time for the assistant to "think" :)
       verify_ssl: false
       method: POST
 
@@ -61,7 +103,9 @@ actions:
 # or
 # - action: rest_command.ai_get_assistant_reply
   data:
-    # This is the {{ prompt }} variable from above
+    # For rest_command.ai_get_assistant_reply you must specify a thread
+    #  thread: "default"
+    #  This is the {{ prompt }} variable from above
     prompt: >-
       In two sentences remind me I need to make cake.
       But I have no idea cake is a lie.
