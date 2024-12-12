@@ -88,7 +88,7 @@ def mock_thread_object():
 
     :return: MockThreadObject with id attr set to "id"
     """
-    
+
     log.info("MockThreadObject created")
 
     class MockThreadObject:
