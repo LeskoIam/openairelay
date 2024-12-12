@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      VALID_THREAD_ID: ${{ secrets.VALID_THREAD_ID }}
+      DEFAULT_THREAD_ID: ${{ secrets.DEFAULT_THREAD_ID }}
     steps:
 
       - name: Checkout repo

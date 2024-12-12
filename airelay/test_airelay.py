@@ -60,9 +60,9 @@ def populate_db_fake_thread_id(session: Session):
 @pytest.fixture(scope="function")
 def populate_db_valid_thread_id(session: Session):
     """Fill DB with test data"""
-    valid_id = os.getenv("VALID_THREAD_ID")
+    valid_id = os.getenv("DEFAULT_THREAD_ID")
     if valid_id is None:
-        pytest.xfail("VALID_THREAD_ID not set.")
+        pytest.xfail("DEFAULT_THREAD_ID not set.")
     default_thread = SavedThread(name="default", thread_id=valid_id, description="Default thread")
     session.add(default_thread)
     session.commit()

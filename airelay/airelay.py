@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -6,9 +7,10 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlmodel import Session, SQLModel, create_engine, select
 
+from config import DEFAULT_THREAD_ID
 from .load_system_roles import LoadSystemRoleException, load_system_role
 from .logging_config import configure_logging
 from .models import SavedThread
@@ -46,6 +48,20 @@ engine = create_engine(sqlite_url, connect_args=connect_args)
 def create_db_and_tables():
     """Create all DB."""
     SQLModel.metadata.create_all(engine)
+    if DEFAULT_THREAD_ID is None:
+        log.warning("DEFAULT_THREAD_ID not defined. Please check documentation to learn how to generate one. "
+                    "Hint: use `api/v1/threads/` and name it `default`")
+        return
+    s = SavedThread(name="default", thread_id=DEFAULT_THREAD_ID, description="Auto added default thread id")
+    with Session(engine) as session:
+        default_threads = session.exec(select(SavedThread).where(SavedThread.name == s.name)).all()
+        if len(default_threads) < 1:
+            session.add(s)
+            try:
+                session.commit()
+            except IntegrityError:
+                log.warning("Couldn't add default thread id, it could be it is already added "
+                            "or that thread_id is already added under some other name")
 
 
 def get_session():
@@ -178,7 +194,7 @@ def respond_as_assistant(prompt: str, thread_name: str, session: SessionDep, cre
             except NoResultFound:
                 log.warning(
                     "'default' thread not found. Set default thread id with environment variable "
-                    "'VALID_THREAD_ID'. E.g.: 'thread_kxEvEGnowayaligatorA9Twg'"
+                    "'DEFAULT_THREAD_ID'. E.g.: 'thread_kxEvEGnowayaligatorA9Twg'"
                 )
                 raise HTTPException(
                     status_code=404, detail=f"'{thread_name}' and 'default' thread not found in database"
