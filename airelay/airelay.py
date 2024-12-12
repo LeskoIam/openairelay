@@ -1,13 +1,11 @@
-# Documentation is like sex.
-# When it's good, it's very good.
-# When it's bad, it's better than nothing.
-# When it lies to you, it may be a while before you realize something's wrong.
 import logging
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -31,7 +29,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
+app.mount("/static", StaticFiles(directory="airelay/static"), name="static")
+templates = Jinja2Templates(directory="airelay/templates")
 
 #                        #############
 # ######################## DB config ##########################
@@ -61,6 +60,11 @@ SessionDep = Annotated[Session, Depends(get_session)]
 #                           #######
 # ########################### API #############################
 #                           #######
+
+
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse("home.html", context={"request": request})
 
 
 @app.get("/api/v1/threads", response_model=list[SavedThread])
