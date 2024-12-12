@@ -79,7 +79,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 
 @app.get("/")
-def home(request: Request):
+def ui_home(request: Request):
+    """Serve a small ui."""
+
     return templates.TemplateResponse("home.html", context={"request": request})
 
 
