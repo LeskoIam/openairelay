@@ -82,17 +82,17 @@ Head to http://localhost:8088 and check if any Threads show up. If not do the fo
 # configuration.yaml
 rest_command:
     ai_get_reply:
-      # Here you can select which system role to use in the bellow case 'default' role is selected (e.g.: '.../default/...')
+      # Here you can select which system role to use. In the bellow case 'default' role is selected (e.g.: '.../default/...')
       url: http://my-ip-or-host:8088/api/v1/roles/default/{{ prompt }}
-      # Or define a input_select helper for selecting predefined system roles:
+      # Or define an input_select helper for selecting predefined system roles:
       # url: http://my-ip-or-host:8088/api/v1/roles/{{ states('input_select.ai_system_role' )}}/{{ prompt }}
       verify_ssl: false
       method: POST
     
     ai_get_assistant_reply:
-      # Here you can select which thread to use in the bellow case 'default' role is selected (e.g.: '.../default')
-      # Same as with roles you can define some input helper and have thread be dynamic 
-      url: http://192.168.0.201:8088/api/v1/assistant/{{ prompt }}/default
+      # Here you can select which thread to use. In the bellow case 'default' role is selected (e.g.: '.../default')
+      # Same as with ai_get_reply - role you can define some input helper and have thread be dynamic 
+      url: http://192.168.0.201:8088/api/v1/assistant/{{ prompt }}/{{ thread }}
       timeout: 60  # It can take some time for the assistant to "think" :)
       verify_ssl: false
       method: POST
