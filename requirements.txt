@@ -7,3 +7,4 @@ ruff>=0.8.2
 pytest>=8.3.4
 pytest-mock>=3.14.0
 sqlmodel>=0.0.22
+bumpver>=2023.1130
