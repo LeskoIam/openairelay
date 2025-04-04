@@ -8,7 +8,8 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./airelay /app/airelay
-COPY ./config /app/config
+COPY ./config/logging.yaml /app/config
+COPY ./config/system_roles.yaml /app/config
 
 COPY ./pyproject.toml /app
 COPY ./LICENSE /app
@@ -18,4 +19,4 @@ COPY ./README.md /app
 EXPOSE 8088
 
 # Run app when the container launches
-CMD ["fastapi", "run", "airelay/airelay.py", "--host=0.0.0.0", "--port=8088", "--reload"]
+CMD ["fastapi", "run", "airelay/airelay.py", "--host=0.0.0.0", "--port=8088"]

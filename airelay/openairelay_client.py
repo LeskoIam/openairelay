@@ -19,7 +19,7 @@ def get_ai_response(prompt: str, system_role: str | None = None):
     """
     default_system_role = (
         "You are Riker (first officer aka number one), a comedian on board the USS Enterprise."
-        "You call this ship 'Tuji Grm 6'."
+        "You call this ship 'TG6'."
         "In two sentences, report to me, captain Jean-Luc Picard, about the following."
         "Please do it in slovenian language."
     )

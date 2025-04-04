@@ -1,14 +1,12 @@
 services:
   kronoterm_cloud_relay:
-    image: leskoiam/airelay:latest
+    image: leskoiam/openairelay:0.0.1
     container_name: airelay
     restart: unless-stopped
     ports:
       - "8088:8088"  # Adjust the port mappings as needed
+    env_file: ".env"
     environment:
-      - OPENAI_API_KEY="your-open-api-key"
-#      - SYSTEM_ROLES=./airelay/settings/system_roles_tg6.yaml
-#      - LOGGING_CONFIG=./logging.yaml
       - TZ=Europe/Paris   # set to your own timezone https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     volumes:
-      - ./config:/data/
+      - ./config:/app/config
