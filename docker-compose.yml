@@ -1,6 +1,6 @@
 services:
   kronoterm_cloud_relay:
-    image: leskoiam/openairelay:0.0.1
+    image: leskoiam/openairelay:0.0.3
     container_name: airelay
     restart: unless-stopped
     ports:
@@ -9,4 +9,4 @@ services:
     environment:
       - TZ=Europe/Paris   # set to your own timezone https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     volumes:
-      - ./config:/app/config
+      - "./config:/app/config"
