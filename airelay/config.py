@@ -18,8 +18,8 @@ def get_env(var: str, default: Any = None) -> str | Any:
 
 
 OPENAI_ASSISTANT_ID = get_env("OPENAI_ASSISTANT_ID")
-SYSTEM_ROLES = get_env("SYSTEM_ROLES", "./config/system_roles.yaml")
+SYSTEM_ROLES = get_env("SYSTEM_ROLES", "./default_config/system_roles.yaml")
 
-LOGGING_CONFIG = get_env("LOGGING_CONFIG", "./config/logging.yaml")
+LOGGING_CONFIG = get_env("LOGGING_CONFIG", "./default_config/logging.yaml")
 
 DEFAULT_THREAD_ID = get_env("DEFAULT_THREAD_ID")

@@ -8,8 +8,8 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./airelay /app/airelay
-#COPY ./config/logging.yaml /app/config
-#COPY ./config/system_roles.yaml /app/config
+COPY ./config/logging.yaml /app/default_config
+COPY ./config/system_roles.yaml /app/default_config
 
 COPY ./pyproject.toml /app
 COPY ./LICENSE /app
